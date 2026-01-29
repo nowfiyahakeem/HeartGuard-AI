@@ -69,13 +69,12 @@
         #alert-screen { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             display: none; z-index: 1000; flex-direction: column; 
-            align-items: center; justify-content: flex-start; /* Changed for scroll correction */
+            align-items: center; justify-content: flex-start; 
             text-align: center; color: white; 
             overflow-y: auto; padding: 50px 20px; 
             box-sizing: border-box;
         }
 
-        /* NEW DIET STYLES FOR RISK PAGE */
         .risk-diet-box { 
             background: rgba(0,0,0,0.4); 
             padding: 20px; 
@@ -87,12 +86,10 @@
         }
         .motivation-text { font-style: italic; font-weight: bold; margin-top: 15px; color: #fff; text-shadow: 0 0 5px rgba(0,0,0,0.5); }
         
-        /* NEWS SECTION */
         .news-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .stat-card { text-align: center; padding: 20px; border-radius: 15px; background: rgba(0, 210, 255, 0.05); border: 1px solid var(--accent); }
         .stat-card h3 { font-size: 2.5rem; margin: 10px 0; color: var(--accent); text-shadow: 0 0 10px var(--accent); }
 
-        /* CHAT */
         #chat-window { height: 250px; overflow-y: auto; background: #010409; border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
     </style>
 </head>
@@ -233,53 +230,62 @@
         }
 
         async function runAnalysis() {
-            const res = await fetch('http://127.0.0.1:8000/predict', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    age: document.getElementById('age').value,
-                    trestbps: document.getElementById('bp').value,
-                    chol: document.getElementById('chol').value,
-                    Max_heart_rate: document.getElementById('mhr').value,
-                    cp: document.getElementById('cp').value
-                })
-            });
-            const data = await res.json();
-            const risk = data.risk_score;
-            
-            const screen = document.getElementById('alert-screen');
-            const dietText = document.getElementById('diet-text');
-            const motivText = document.getElementById('motivation-box');
+            // UPDATED TO USE YOUR RENDER URL
+            try {
+                const res = await fetch('https://heartguard-ai-9rel.onrender.com/predict', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        age: document.getElementById('age').value,
+                        trestbps: document.getElementById('bp').value,
+                        chol: document.getElementById('chol').value,
+                        Max_heart_rate: document.getElementById('mhr').value,
+                        cp: document.getElementById('cp').value
+                    })
+                });
 
-            if(risk > 50) {
-                screen.style.background = "rgba(255, 0, 60, 0.98)";
-                document.getElementById('alert-emoji').innerText = "⚠️";
-                document.getElementById('alert-title').innerText = "HIGH RISK DETECTED";
-                document.getElementById('alert-quote').innerText = "Warning: Clinical stress detected in cardiac vitals.";
+                if (!res.ok) throw new Error("Server Error");
+
+                const data = await res.json();
+                const risk = data.risk_score;
                 
-                dietText.innerHTML = `
-                    <p><b>Diet Plan:</b> Low Sodium (Salt), DASH Diet focused.</p>
-                    <p><b>Food Suggestions:</b> Leafy greens, Oats, Salmon (Omega-3), Walnuts, Berries. Avoid processed sugars and trans-fats.</p>
-                `;
-                motivText.innerHTML = `<i class="fa-solid fa-quote-left"></i> "Your heart is a muscle, and you are the coach. It’s never too late to start a winning season for your health!"`;
-            } else {
-                screen.style.background = "rgba(0, 255, 136, 0.98)";
-                document.getElementById('alert-emoji').innerText = "✨ 🌟 ✨";
-                document.getElementById('alert-title').innerText = "EXCELLENT CONDITION!";
-                document.getElementById('alert-quote').innerText = "Celebration! Your heart is performing at peak medical efficiency.";
-                
-                dietText.innerHTML = `
-                    <p><b>Maintenance Plan:</b> Mediterranean Diet approach.</p>
-                    <p><b>Food Suggestions:</b> Avocado, Olive oil, colorful vegetables, and lean proteins. Keep hydrated!</p>
-                `;
-                motivText.innerHTML = `<i class="fa-solid fa-trophy"></i> "Amazing work! Your dedication to your health is paying off. Keep shining and stay strong!"`;
-                
-                screen.style.animation = "pulse 0.5s 3";
+                const screen = document.getElementById('alert-screen');
+                const dietText = document.getElementById('diet-text');
+                const motivText = document.getElementById('motivation-box');
+
+                if(risk > 50) {
+                    screen.style.background = "rgba(255, 0, 60, 0.98)";
+                    document.getElementById('alert-emoji').innerText = "⚠️";
+                    document.getElementById('alert-title').innerText = "HIGH RISK DETECTED";
+                    document.getElementById('alert-quote').innerText = "Warning: Clinical stress detected in cardiac vitals.";
+                    
+                    dietText.innerHTML = `
+                        <p><b>Diet Plan:</b> Low Sodium (Salt), DASH Diet focused.</p>
+                        <p><b>Food Suggestions:</b> Leafy greens, Oats, Salmon (Omega-3), Walnuts, Berries. Avoid processed sugars and trans-fats.</p>
+                    `;
+                    motivText.innerHTML = `<i class="fa-solid fa-quote-left"></i> "Your heart is a muscle, and you are the coach. It’s never too late to start a winning season for your health!"`;
+                } else {
+                    screen.style.background = "rgba(0, 255, 136, 0.98)";
+                    document.getElementById('alert-emoji').innerText = "✨ 🌟 ✨";
+                    document.getElementById('alert-title').innerText = "EXCELLENT CONDITION!";
+                    document.getElementById('alert-quote').innerText = "Celebration! Your heart is performing at peak medical efficiency.";
+                    
+                    dietText.innerHTML = `
+                        <p><b>Maintenance Plan:</b> Mediterranean Diet approach.</p>
+                        <p><b>Food Suggestions:</b> Avocado, Olive oil, colorful vegetables, and lean proteins. Keep hydrated!</p>
+                    `;
+                    motivText.innerHTML = `<i class="fa-solid fa-trophy"></i> "Amazing work! Your dedication to your health is paying off. Keep shining and stay strong!"`;
+                    screen.style.animation = "pulse 0.5s 3";
+                }
+
+                document.getElementById('alert-percent').innerText = risk + "% Risk";
+                screen.style.display = "flex";
+                saveToHistory(risk);
+
+            } catch (error) {
+                alert("The AI Brain is still waking up! Please try again in 20 seconds.");
+                console.error(error);
             }
-
-            document.getElementById('alert-percent').innerText = risk + "% Risk";
-            screen.style.display = "flex";
-            saveToHistory(risk);
         }
 
         function closeAlert() { document.getElementById('alert-screen').style.display = 'none'; }

@@ -76,6 +76,8 @@ class HeartGuardServer(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     print("------------------------------------------")
     print("🚀 HEARTGUARD AI: CLINICAL BRAIN ACTIVE")
-    print("📍 URL: http://127.0.0.1:8000")
+    print("📍 URL: https://heartguard-ai-9rel.onrender.com")
     print("------------------------------------------")
-    HTTPServer(('127.0.0.1', 8000), HeartGuardServer).serve_forever()
+    # Change '127.0.0.1' to '0.0.0.0' so Render can host it
+    # Change 8000 to 10000 (Render's preferred port, though 8000 often works)
+    HTTPServer(('0.0.0.0', 8000), HeartGuardServer).serve_forever()
