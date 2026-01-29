@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HeartGuard AI | Clinical Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* VIBRANT COLOR PALETTE */
+        :root { 
+            --bg: #010409; 
+            --card: #0d1117; 
+            --accent: #00d2ff; /* Vibrant Neon Cyan */
+            --danger: #ff003c; /* Glowing Red */
+            --success: #00ff88; /* Vibrant Green */
+            --text: #e6edf3;
+        }
+        
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica; background: var(--bg); color: var(--text); overflow-x: hidden; }
+        
+        /* NAVIGATION WITH LOGOUT */
+        nav { 
+            background: #161b22; 
+            padding: 0 30px; 
+            display: none; 
+            justify-content: space-between; 
+            align-items: center;
+            border-bottom: 2px solid var(--accent); 
+            position: sticky; 
+            top: 0; 
+            z-index: 100; 
+            height: 70px;
+            box-shadow: 0 4px 20px rgba(0, 210, 255, 0.15);
+        }
+        .nav-links { display: flex; gap: 25px; }
+        nav div { cursor: pointer; font-weight: 600; color: #8b949e; transition: 0.3s; display: flex; align-items: center; gap: 8px; }
+        nav div:hover { color: var(--accent); }
+        nav div.active-nav { color: var(--accent); border-bottom: 2px solid var(--accent); }
+        
+        .logout-btn { 
+            color: var(--danger) !important; 
+            border: 1px solid var(--danger); 
+            padding: 8px 18px; 
+            border-radius: 20px; 
+            font-size: 0.9rem;
+            transition: 0.3s;
+        }
+        .logout-btn:hover { background: var(--danger); color: white !important; box-shadow: 0 0 15px var(--danger); }
+
+        /* PAGES */
+        .page { display: none; padding: 20px; max-width: 900px; margin: 0 auto; animation: fadeIn 0.5s ease; }
+        .active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* CARDS & UI */
+        .card { background: var(--card); border: 1px solid #30363d; border-radius: 16px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h1, h2 { color: white; text-shadow: 0 0 10px rgba(255,255,255,0.1); }
+        .logo-box { text-align: center; margin-bottom: 30px; }
+        .logo-box i { font-size: 70px; color: var(--danger); filter: drop-shadow(0 0 15px var(--danger)); animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        /* INPUTS */
+        input, select { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: 1px solid #30363d; background: #0d1117; color: white; box-sizing: border-box; transition: 0.3s; }
+        input:focus { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); outline: none; }
+        .btn { width: 100%; padding: 16px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; background: var(--accent); color: black; margin-top: 10px; font-size: 1rem; transition: 0.3s; }
+        .btn:hover { transform: scale(1.02); box-shadow: 0 0 20px var(--accent); }
+
+        /* ALERTS - FIXED SCROLLING */
+        #alert-screen { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            display: none; z-index: 1000; flex-direction: column; 
+            align-items: center; justify-content: flex-start; /* Changed for scroll correction */
+            text-align: center; color: white; 
+            overflow-y: auto; padding: 50px 20px; 
+            box-sizing: border-box;
+        }
+
+        /* NEW DIET STYLES FOR RISK PAGE */
+        .risk-diet-box { 
+            background: rgba(0,0,0,0.4); 
+            padding: 20px; 
+            border-radius: 15px; 
+            margin: 20px 0; 
+            max-width: 600px; 
+            border: 1px solid rgba(255,255,255,0.2);
+            text-align: left;
+        }
+        .motivation-text { font-style: italic; font-weight: bold; margin-top: 15px; color: #fff; text-shadow: 0 0 5px rgba(0,0,0,0.5); }
+        
+        /* NEWS SECTION */
+        .news-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .stat-card { text-align: center; padding: 20px; border-radius: 15px; background: rgba(0, 210, 255, 0.05); border: 1px solid var(--accent); }
+        .stat-card h3 { font-size: 2.5rem; margin: 10px 0; color: var(--accent); text-shadow: 0 0 10px var(--accent); }
+
+        /* CHAT */
+        #chat-window { height: 250px; overflow-y: auto; background: #010409; border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+    <div id="alert-screen">
+        <div style="font-size: 80px;" id="alert-emoji"></div>
+        <h1 id="alert-title" style="font-size: 2.5rem; margin: 5px 0;"></h1>
+        <h2 id="alert-percent" style="font-size: 3.5rem; margin: 5px 0;">0%</h2>
+        <p id="alert-quote" style="max-width: 600px; font-size: 1.1rem; margin-bottom: 10px;"></p>
+        
+        <div class="risk-diet-box" id="diet-suggestion-box">
+            <h3 style="margin-top: 0;"><i class="fa-solid fa-utensils"></i> Recommended Actions:</h3>
+            <div id="diet-text"></div>
+            <div id="motivation-box" class="motivation-text"></div>
+        </div>
+
+        <button class="btn" onclick="closeAlert()" style="width: 280px; background: white; color: black; margin-bottom: 40px;">RETURN TO DASHBOARD</button>
+    </div>
+
+    <div id="page-login" class="page active">
+        <div class="logo-box" style="margin-top: 50px;">
+            <i class="fa-solid fa-heart-pulse"></i>
+            <h1 style="font-size: 2.5rem; margin-top: 15px;">HeartGuard AI</h1>
+            <p style="color: #8b949e;">Precision Clinical Monitoring System</p>
+        </div>
+        <div class="card" style="max-width: 400px; margin: 0 auto;">
+            <input type="text" id="username" placeholder="Enter Patient Name">
+            <input type="password" placeholder="Clinical Access Key">
+            <button class="btn" onclick="login()">Enter Portal</button>
+            <button onclick="window.location.reload()" style="background:none; border:none; color:#8b949e; width:100%; margin-top:15px; cursor:pointer;"><i class="fa-solid fa-arrow-left"></i> Back to Start</button>
+        </div>
+    </div>
+
+    <nav id="main-nav">
+        <div class="nav-links">
+            <div id="nav-profile" onclick="showPage('page-profile')"><i class="fa-solid fa-user"></i> Profile</div>
+            <div id="nav-checkup" onclick="showPage('page-checkup')"><i class="fa-solid fa-stethoscope"></i> Checkup</div>
+            <div id="nav-news" onclick="showPage('page-news')"><i class="fa-solid fa-globe"></i> News</div>
+            <div id="nav-ai" onclick="showPage('page-ai')"><i class="fa-solid fa-robot"></i> AI Chat</div>
+        </div>
+        <div class="logout-btn" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
+    </nav>
+
+    <div id="page-profile" class="page">
+        <h1>Patient Dashboard</h1>
+        <div class="card">
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="width: 80px; height: 80px; border-radius: 50%; background: #30363d; display: flex; align-items: center; justify-content: center; font-size: 40px; color: var(--accent);">
+                    <i class="fa-solid fa-circle-user"></i>
+                </div>
+                <div>
+                    <h2 id="user-display" style="margin:0; font-size: 2rem; color: var(--accent);">--</h2>
+                    <p style="margin:5px 0;">ID: HG-99201 | Status: <span style="color: var(--success);">Online</span></p>
+                </div>
+            </div>
+        </div>
+        <h2>Scan History</h2>
+        <div class="card" id="history-list">No previous scans found.</div>
+    </div>
+
+    <div id="page-checkup" class="page">
+        <h1>Heart Risk Analysis</h1>
+        <div class="card">
+            <label>Patient Age</label><input type="number" id="age" value="65">
+            <label>Blood Pressure (Systolic)</label><input type="number" id="bp" value="165">
+            <label>Cholesterol (mg/dl)</label><input type="number" id="chol" value="290">
+            <label>Max Heart Rate</label><input type="number" id="mhr" value="150">
+            <label>Chest Pain Symptom</label>
+            <select id="cp">
+                <option value="Typical angina">Typical Angina</option>
+                <option value="Asymptomatic">Asymptomatic (No Pain - Silent Risk)</option>
+            </select>
+            <button class="btn" style="background: var(--success); color: white;" onclick="runAnalysis()">RUN CLINICAL SCAN</button>
+        </div>
+    </div>
+
+    <div id="page-news" class="page">
+        <h1>Global Heart Report</h1>
+        <div class="news-grid">
+            <div class="stat-card">
+                <p>Annual Fatalities</p>
+                <h3>17.9M</h3>
+                <small>Leading cause of global death</small>
+            </div>
+            <div class="stat-card">
+                <p>Global CVD Cases</p>
+                <h3>523M</h3>
+                <small>2026 WHO Projections</small>
+            </div>
+        </div>
+        <div class="card" style="margin-top:20px;">
+            <h3>Mortality Trends (Millions)</h3>
+            <canvas id="deathChart" height="140"></canvas>
+        </div>
+    </div>
+
+    <div id="page-ai" class="page">
+        <h1>HeartLink AI Assistant</h1>
+        <div class="card">
+            <div id="chat-window">
+                <div style="color:var(--accent)"><b>AI:</b> Hello. I am your specialized cardiac assistant. How can I help you today?</div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="chat-input" placeholder="Ask about BP, Cholesterol or Diet..." style="margin:0;">
+                <button class="btn" style="width: 100px; margin:0;" onclick="sendChat()">Ask</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = "";
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('nav div').forEach(n => n.classList.remove('active-nav'));
+            document.getElementById(pageId).classList.add('active');
+            const navItem = document.getElementById('nav-' + pageId.split('-')[1]);
+            if(navItem) navItem.classList.add('active-nav');
+            if(pageId === 'page-news') initCharts();
+        }
+
+        function login() {
+            currentUser = document.getElementById('username').value;
+            if(currentUser) {
+                document.getElementById('page-login').classList.remove('active');
+                document.getElementById('main-nav').style.display = 'flex';
+                document.getElementById('user-display').innerText = currentUser;
+                showPage('page-profile');
+            }
+        }
+
+        function logout() {
+            currentUser = "";
+            document.getElementById('username').value = "";
+            document.getElementById('main-nav').style.display = 'none';
+            showPage('page-login');
+        }
+
+        async function runAnalysis() {
+            const res = await fetch('http://127.0.0.1:8000/predict', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    age: document.getElementById('age').value,
+                    trestbps: document.getElementById('bp').value,
+                    chol: document.getElementById('chol').value,
+                    Max_heart_rate: document.getElementById('mhr').value,
+                    cp: document.getElementById('cp').value
+                })
+            });
+            const data = await res.json();
+            const risk = data.risk_score;
+            
+            const screen = document.getElementById('alert-screen');
+            const dietText = document.getElementById('diet-text');
+            const motivText = document.getElementById('motivation-box');
+
+            if(risk > 50) {
+                screen.style.background = "rgba(255, 0, 60, 0.98)";
+                document.getElementById('alert-emoji').innerText = "⚠️";
+                document.getElementById('alert-title').innerText = "HIGH RISK DETECTED";
+                document.getElementById('alert-quote').innerText = "Warning: Clinical stress detected in cardiac vitals.";
+                
+                dietText.innerHTML = `
+                    <p><b>Diet Plan:</b> Low Sodium (Salt), DASH Diet focused.</p>
+                    <p><b>Food Suggestions:</b> Leafy greens, Oats, Salmon (Omega-3), Walnuts, Berries. Avoid processed sugars and trans-fats.</p>
+                `;
+                motivText.innerHTML = `<i class="fa-solid fa-quote-left"></i> "Your heart is a muscle, and you are the coach. It’s never too late to start a winning season for your health!"`;
+            } else {
+                screen.style.background = "rgba(0, 255, 136, 0.98)";
+                document.getElementById('alert-emoji').innerText = "✨ 🌟 ✨";
+                document.getElementById('alert-title').innerText = "EXCELLENT CONDITION!";
+                document.getElementById('alert-quote').innerText = "Celebration! Your heart is performing at peak medical efficiency.";
+                
+                dietText.innerHTML = `
+                    <p><b>Maintenance Plan:</b> Mediterranean Diet approach.</p>
+                    <p><b>Food Suggestions:</b> Avocado, Olive oil, colorful vegetables, and lean proteins. Keep hydrated!</p>
+                `;
+                motivText.innerHTML = `<i class="fa-solid fa-trophy"></i> "Amazing work! Your dedication to your health is paying off. Keep shining and stay strong!"`;
+                
+                screen.style.animation = "pulse 0.5s 3";
+            }
+
+            document.getElementById('alert-percent').innerText = risk + "% Risk";
+            screen.style.display = "flex";
+            saveToHistory(risk);
+        }
+
+        function closeAlert() { document.getElementById('alert-screen').style.display = 'none'; }
+
+        function saveToHistory(r) {
+            let logs = JSON.parse(localStorage.getItem(currentUser + "_history") || "[]");
+            logs.unshift({ date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString(), score: r });
+            localStorage.setItem(currentUser + "_history", JSON.stringify(logs));
+            updateHistoryUI(logs);
+        }
+
+        function updateHistoryUI(logs) {
+            const list = document.getElementById('history-list');
+            list.innerHTML = logs.map(l => `
+                <div style="border-bottom: 1px solid #30363d; padding: 12px 0; display: flex; justify-content: space-between;">
+                    <span><b>${l.date}</b> <small>(${l.time})</small></span>
+                    <span style="color:${l.score > 50 ? 'var(--danger)' : 'var(--success)'}; font-weight:bold;">${l.score}% Risk</span>
+                </div>
+            `).join('');
+        }
+
+        function sendChat() {
+            const input = document.getElementById('chat-input');
+            const win = document.getElementById('chat-window');
+            if(!input.value) return;
+            win.innerHTML += `<div style="text-align:right; margin:10px 0;"><b>You:</b> ${input.value}</div>`;
+            
+            let response = "I'm analyzing your request. For optimal heart health, I recommend reducing salt and eating more fiber-rich oats.";
+            let q = input.value.toLowerCase();
+            if(q.includes("bp") || q.includes("pressure")) response = "High Blood Pressure (over 140) is dangerous. Try to walk 30 mins a day and reduce sodium.";
+            
+            setTimeout(() => {
+                win.innerHTML += `<div style="color:var(--accent)"><b>AI:</b> ${response}</div>`;
+                win.scrollTop = win.scrollHeight;
+            }, 500);
+            input.value = "";
+        }
+
+        function initCharts() {
+            const ctx = document.getElementById('deathChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['2021', '2022', '2023', '2024', '2025', '2026'],
+                    datasets: [{
+                        label: 'Annual Deaths',
+                        data: [15.2, 16.1, 16.8, 17.2, 17.5, 17.9],
+                        borderColor: '#00d2ff',
+                        backgroundColor: 'rgba(0, 210, 255, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                }
+            });
+        }
+    </script>
+</body>
+</html>
